@@ -27,17 +27,21 @@ jobs:
           cd MERN-store/
           cd backend/
           sudo npm install
+          sudo npm install mongodb
           sudo kill $(lsof -nt -i4TCP:8000)
           sudo pm2 run build
           cd frontend/     
-          sudo npm install
+          sudo yarn install
           sudo kill $(lsof -nt -i4TCP:3000)
-          sudo pm2 run build                             
+          sudo pm2 run build 
+          sudo rm -rf /var/www/html
+          sudo mkdir /var/www/html
+          sudo cp build/* /var/www/html -r                            
           cd socket/  
           sudo npm install
           sudo kill $(lsof -nt -i4TCP:4000)
           sudo pm2 run build    
-          sudo pm2 delete react-build || true
-          pm2 serve build/ 3000 -f --name "react-build" --spa
+          # sudo pm2 delete react-build || true
+          # pm2 serve build/ 3000 -f --name "react-build" --spa
           sudo systemctl restart nginx
 

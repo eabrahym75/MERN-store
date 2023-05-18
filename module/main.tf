@@ -5,7 +5,7 @@ data "template_file" "user_data1" {
 }
 
 resource "aws_launch_configuration" "terra-ec2" {
-  Name = ""
+  Name = "${var.cluster_name}-lc"
   image_id        = "ami-0fb653ca2d3203ac1"
   instance_type   = var.instance_type
   security_groups = [aws_security_group.my_asg.id]
