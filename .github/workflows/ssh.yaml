@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy-server:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
@@ -18,4 +18,21 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-      
+          
+
+sudo ssh -i ~/.ssh/key.pem ubuntu@ip-------
+
+
+cd /home/ubuntu
+sudo rm -rf server || true
+sudo git clone <git url>
+cd full-ecommerce/
+cd web_services
+sudo npm install
+sudo pm2 kill
+sudo kill $(lsof -nt -i4TCP:5002)
+sudo pm2 start index.js --name "backend-server"
+sudo rm -rf /etc/nginx/sites-available/default
+sudo cp server-config /etc/nginx/sites-available/ -r
+sudo systemctl kill nginx || true
+sudo systemctl start nginx
