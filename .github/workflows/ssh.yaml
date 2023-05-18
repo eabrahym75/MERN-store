@@ -1,12 +1,14 @@
-name: Server Deploy
+Server Deploy
 
-on:
-  push:
-    branches: ['staging-branch']
+on: 
+   pull_request:
+     types: [closed]
+     branches:
+       - main
 
 jobs:
   deploy-server:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
@@ -18,4 +20,22 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-      
+          
+          sudo ssh -i ~/.ssh/key.pem ubuntu@ip-------
+          cd /home/ubuntu
+          git clone https://github.com/eabrahym75/MERN-store.git
+          cd MERN-store/
+          cd backend/
+          sudo npm install
+          sudo kill $(lsof -nt -i4TCP:8000)
+          sudo pm2 run build
+          cd frontend/     
+          sudo npm install
+          sudo kill $(lsof -nt -i4TCP:3000)
+          sudo pm2 run build                             
+          cd socket/  
+          sudo npm install
+          sudo kill $(lsof -nt -i4TCP:4000)
+          sudo pm2 run build    
+          sudo systemctl restart nginx
+
