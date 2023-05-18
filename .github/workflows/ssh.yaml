@@ -1,8 +1,10 @@
-name: Server Deploy
+Server Deploy
 
-on:
-  push:
-    branches: ['staging-branch']
+on: 
+   pull_request:
+     types: [closed]
+     branches:
+       - main
 
 jobs:
   deploy-server:
@@ -19,20 +21,21 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           
+          sudo ssh -i ~/.ssh/key.pem ubuntu@ip-------
+          cd /home/ubuntu
+          git clone https://github.com/eabrahym75/MERN-store.git
+          cd MERN-store/
+          cd backend/
+          sudo npm install
+          sudo kill $(lsof -nt -i4TCP:8000)
+          sudo pm2 run build
+          cd frontend/     
+          sudo npm install
+          sudo kill $(lsof -nt -i4TCP:3000)
+          sudo pm2 run build                             
+          cd socket/  
+          sudo npm install
+          sudo kill $(lsof -nt -i4TCP:4000)
+          sudo pm2 run build    
+          sudo systemctl restart nginx
 
-sudo ssh -i ~/.ssh/key.pem ubuntu@ip-------
-
-
-cd /home/ubuntu
-sudo rm -rf server || true
-sudo git clone <git url>
-cd full-ecommerce/
-cd web_services
-sudo npm install
-sudo pm2 kill
-sudo kill $(lsof -nt -i4TCP:5002)
-sudo pm2 start index.js --name "backend-server"
-sudo rm -rf /etc/nginx/sites-available/default
-sudo cp server-config /etc/nginx/sites-available/ -r
-sudo systemctl kill nginx || true
-sudo systemctl start nginx
