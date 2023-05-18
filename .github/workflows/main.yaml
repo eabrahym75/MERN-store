@@ -70,7 +70,7 @@ jobs:
 
   destroy:
     needs: lint
-    if: github.ref == '- staging-branch' && github.event.pull_request.merged == true
+    if: github.ref == 'staging-branch' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -82,7 +82,7 @@ jobs:
       with:
         terraform_version: 1.4.6
     - name: Terraform init
-      run: terraform init 9
+      run: terraform init 
       working-directory: ./
     - name: Terraform Destroy
       working-directory: ./
