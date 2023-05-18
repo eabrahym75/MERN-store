@@ -1,23 +1,96 @@
 # Refer to the template file - install_nginx.sh
 data "template_file" "user_data1" {
-  template = "${file("install-nginx.sh")}"
+  template = "${file("./modules/install-nginx.sh")}"
 
 }
 
+resource "aws_launch_configuration" "terra-ec2" {
+  Name = ""
+  image_id        = "ami-0fb653ca2d3203ac1"
+  instance_type   = var.instance_type
+  security_groups = [aws_security_group.my_asg.id]
 
-# Create EC2 Instance - Ubuntu 20.04 for nginx
-resource "aws_instance" "my-nginx-server2ws" {
-  ami                    = "ami-0aa2b7722dc1b5612"
-  instance_type          = "t2.micro"
-  availability_zone      = "us-east-1"
-  key_name               = "aws_key"
-  vpc_security_group_ids = ["${aws_security_group.my_asg.id}"]
-  
   # user_data : render the template
   user_data     = base64encode("${data.template_file.user_data1.rendered}")
 
-  tags = {
-    "Name" = "Ubuntu Nginx server"
+
+  # Required when using a launch configuration with an auto scaling group.
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_autoscaling_group" "terra" {
+  launch_configuration = aws_launch_configuration.terra-ec2.name
+  vpc_zone_identifier  = aws_lb.terra-ec2.subnets
+  target_group_arns    = [aws_lb_target_group.asg.arn]
+  health_check_type    = "ELB"
+
+  min_size = var.min_size
+  max_size = var.max_size
+
+  tag {
+    key                 = "autoscaling"
+    value               = "${var.cluster_name}-asg"
+    propagate_at_launch = true
+  }
+}
+
+# Create a target group for EC2 Instances
+resource "aws_lb_target_group" "asg" {
+  name     = var.cluster_name
+  port     = 80
+  protocol = "HTTP"
+  vpc_id      = aws_vpc.my_test_vpc1.id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 15
+    timeout             = 3
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+
+resource "aws_lb" "terra-ec2" {
+  name               = "${var.cluster_name}-alb"
+  load_balancer_type = "Application"
+  security_groups    = [aws_security_group.my_asg.id]
+  subnets            = [aws_subnet.my_test_vpc1_PublicSubnet.id, aws_subnet.my_test_vpc1_PublicSubnet2.id]
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.terra-ec2.arn
+
+  port              = "80"
+
+  protocol          = "HTTP"
+
+  # By default, return a simple 404 page
+  default_action {
+    type = "fixed-response"
+    target_group_arn = aws_lb_target_group.asg.arn
+  }
+}
+
+
+
+resource "aws_lb_listener_rule" "asg" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
+
+  condition {
+    path_pattern {
+      values = ["*"]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.asg.arn
   }
 }
 
