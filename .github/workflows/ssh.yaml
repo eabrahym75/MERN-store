@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy-server:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: Terraform CI/CD
     steps:
       - name: Checkout
@@ -22,7 +22,7 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |-
-            ssh -i 
+            ssh -i secrets.SSH_PRIVATE_KEY secrets.USER@secrets.HOST
             cd /home/ubuntu \
             git clone https://github.com/eabrahym75/MERN-store.git 
             cd MERN-store/
