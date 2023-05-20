@@ -5,7 +5,7 @@ terraform {
       version = "~> 4.0"
     }
   }
- # backend "s3" {}
+  backend "s3" {}
 }
 
 #Configure the AWS Provider.
@@ -21,6 +21,3 @@ module "server"{
     min_size = 1
     max_size = 5
 }
-
-
-
