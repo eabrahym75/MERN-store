@@ -20,3 +20,8 @@ module "server"{
     min_size = 1
     max_size = 5
 }
+
+output "server-ip" {
+  description = "Public Ip Address of Server Instance"
+  value = module.server-ip.id
+}
