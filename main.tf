@@ -5,7 +5,7 @@ terraform {
       version = "~> 4.0"
     }
   }
-  backend "s3" {}
+ # backend "s3" {}
 }
 
 #Configure the AWS Provider.
@@ -16,12 +16,11 @@ provider "aws" {
 module "server"{
     source = "./module"
     
+    cluster_name = "terra-ec2"
     instance_type = "t2.micro"
     min_size = 1
     max_size = 5
 }
 
-output "server-ip" {
-  description = "Public Ip Address of Server Instance"
-  value = module.server-ip.id
-}
+
+
