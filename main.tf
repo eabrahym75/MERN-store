@@ -5,7 +5,11 @@ terraform {
       version = "~> 4.0"
     }
   }
-  backend "s3" {}
+  backend "s3" {
+    bucket = "bucket-ayantola"
+    key = "tfstate/terraform.tfstate"
+    region = "us-east-1"
+  }
 }
 
 #Configure the AWS Provider.

@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy-server:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: Terraform CI/CD
     steps:
       - name: Checkout
