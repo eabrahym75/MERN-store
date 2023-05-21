@@ -19,6 +19,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
       - name: Format Terraform code
         working-directory: ./
         run: terraform fmt
@@ -39,4 +41,4 @@ jobs:
       working-directory: ./
     - name: Terraform Destroy
       working-directory: ./
-      run: terraform destroy -auto-approve
+      run: terraform destroy -auto-approve tf.plan

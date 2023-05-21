@@ -34,21 +34,66 @@ jobs:
             cd backend/
             sudo npm install
             sudo npm install mongodb
-            sudo kill $(lsof -nt -i4TCP:8000)
-            sudo pm2 run dev
+            sudo npm run dev
             cd ..  \
             cd frontend/     
             sudo yarn install
-            sudo kill $(lsof -nt -i4TCP:3000)
-            sudo pm2 run build 
-            sudo rm -rf /var/www/html
-            sudo mkdir /var/www/html
-            sudo cp build/* /var/www/html -r 
+            sudo yarn run build 
             cd .. \                          
             cd socket/  
             sudo npm install
-            sudo kill $(lsof -nt -i4TCP:4000)
             sudo pm2 start 
+            # Create a new Nginx site configuration file
+            sudo tee /etc/nginx/sites-available/myapp.conf > /dev/null <<EOF
+            server {
+                listen 80 default_server;
+                server_name _;  # Replace with your actual domain or IP address
+                      
+                location / {
+                    proxy_pass http://localhost:3000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade \$http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host \$host;
+                    proxy_cache_bypass \$http_upgrade;
+                }
+              
+                location / {
+                    proxy_pass http://localhost:8000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade \$http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host \$host;
+                    proxy_cache_bypass \$http_upgrade;
+                }
+            }
+            EOF
+              
+            # Remove the default Nginx site configuration file
+            sudo rm -f /etc/nginx/sites-enabled/default
+              
+            # Create a symbolic link to enable the new site configuration
+            sudo ln -s /etc/nginx/sites-available/myapp.conf /etc/nginx/sites-enabled/
+              
+            # Test the Nginx configuration for any syntax errors
+            sudo nginx -t
+              
+            # Restart Nginx to apply the new configuration
+            sudo systemctl restart nginx
+              
+            pm2 serve build/ 3000 -f --name "frontend" --spa
+              
+              
+            echo "******************************************"
+            echo "Performing the following actions for backend"
+            echo "******************************************"
+           
+            sudo rm -rf build
+            sudo npm install
+            sudo npm run build
+            sudo pm2 delete react-admin || true
+            sudo pm2 serve build/ 8000 -f --name "admin-server" --spa
+
             sudo pm2 delete react-build || true
             pm2 serve build/ 3000 -f --name "react-build" --spa
             sudo systemctl restart nginx
