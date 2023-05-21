@@ -6,6 +6,12 @@ on:
      branches:
       - main
 
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+
 jobs:
   deploy-server:
     runs-on: self-hosted
@@ -17,7 +23,6 @@ jobs:
       - name: SSH to server for deployment
         uses: appleboy/ssh-action@master
         with:
-          envs: [AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY]
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
