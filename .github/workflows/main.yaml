@@ -11,7 +11,7 @@ env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
 
 jobs:
-terra-blank:
+terra-iac:
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -26,7 +26,6 @@ terra-blank:
   plan:
     runs-on: ubuntu-latest
     needs: lint
-    if: github.ref == 'refs/heads/dev-branch'
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -43,7 +42,6 @@ terra-blank:
 
   apply:
     needs: plan
-    if: github.ref == 'main' && github.event.pull_request.merged == true   
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -74,10 +72,8 @@ terra-blank:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS__REGION: ${{ secrets.AWS_REGION }}
 
-
-jobs:
   deploy-server:
-  needs: terra-blank
+  needs: terra-iac
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -155,13 +151,13 @@ jobs:
             cd frontend/
             sudo rm -rf build
             sudo npm run build
-            sudo pm2 serve build/ 3000 -f --name "backend" --spa
+            sudo pm2 serve build/ 3000 -f --name "frontend" --spa
             sudo systemctl restart nginx
-    - name: Remove Github Actions IP from security group
-      run: |
+      - name: Remove Github Actions IP from security group
+        run: |
             aws ec2 revoke-security-group-ingress --group-id ${{ env.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
-      env:
+        env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
-      if: always()
+        if: always()

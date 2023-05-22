@@ -13,7 +13,7 @@ env:
 
 jobs:
   destroy:
-    if: github.ref == 'staging-branch' && github.event.pull_request.merged == true
+    if: github.ref == 'main' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -27,4 +27,4 @@ jobs:
       working-directory: ./
     - name: Terraform Destroy
       working-directory: ./
-      run: terraform destroy -auto-approve PLAN
+      run: terraform destroy -auto-approve 
