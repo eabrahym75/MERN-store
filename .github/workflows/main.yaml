@@ -22,7 +22,7 @@ terra-iac:
         - name: Format Terraform code
           working-directory: ./
           run: terraform fmt
-  plan:
+    plan:
     runs-on: ubuntu-latest
     needs: lint
     steps:
@@ -39,7 +39,7 @@ terra-iac:
         working-directory: ./
         run: terraform plan -out=PLAN
 
-  apply:
+    apply:
     needs: plan
     runs-on: ubuntu-latest
     steps:
