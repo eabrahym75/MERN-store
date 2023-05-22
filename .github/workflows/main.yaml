@@ -52,10 +52,7 @@ jobs:
         run: terraform init
       - name: Terraform Apply
         working-directory: ./
-        run: terraform apply -auto-approve 
-      - name: Terraform Destroy
-        working-directory: ./
-        run: terraform destroy -auto-approve 
+        run: terraform apply -auto-approve  
       - name: Get Github action IP
         id: ip
         uses: haythem/public-ip@v1.2
