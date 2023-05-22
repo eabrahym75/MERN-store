@@ -38,11 +38,11 @@ jobs:
             cd ..  \
             cd frontend/     
             sudo yarn install
-            sudo yarn run build 
+            sudo yarn run start
             cd .. \                          
             cd socket/  
             sudo npm install
-            sudo npm run build
+            sudo npm run start
             cd ..  \
             cd backend/
             # Create a new Nginx site configuration file
