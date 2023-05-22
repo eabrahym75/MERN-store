@@ -61,7 +61,7 @@ jobs:
         uses: haythem/public-ip@v1.2
       - name: Setting environment variables
         run: |
-          echo "AWS_SG_ID=module.aws_security_group.my_asg.id" >> $GITHUB_ENV
+          echo "AWS_SG_ID=aws_security_group.my_asg.id" >> $GITHUB_ENV
 
       - name: Add Github Actions IP to Security group
         run: |
