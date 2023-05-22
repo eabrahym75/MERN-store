@@ -12,19 +12,20 @@ env:
 
 jobs:
   terra-iac:
-    lint:
-     runs-on: ubuntu-latest
-     steps:
-        - name: Checkout code
-          uses: actions/checkout@v2
-        - name: Install Terraform
-          uses: hashicorp/setup-terraform@v1
-        - name: Format Terraform code
-          working-directory: ./
-          run: terraform fmt
-    plan:
-     needs: lint
-     steps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+      - name: Format Terraform code
+        working-directory: ./
+        run: terraform fmt
+
+  plan:
+    runs-on: ubuntu-latest
+    needs: terra-iac
+    steps:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
@@ -38,9 +39,10 @@ jobs:
         working-directory: ./
         run: terraform plan -out=PLAN
 
-    apply:
-     needs: plan
-     steps:
+  apply:
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Set up Terraform
@@ -99,7 +101,7 @@ jobs:
             server {
                 listen 80 default_server;
                 server_name _;  # Replace with your actual domain or IP address
-                      
+
                 location / {
                     proxy_pass http://localhost:3000;
                     proxy_http_version 1.1;
@@ -108,7 +110,7 @@ jobs:
                     proxy_set_header Host \$host;
                     proxy_cache_bypass \$http_upgrade;
                 }
-              
+
                 location /socket.io/ {
                     proxy_pass http://localhost:4000;
                     proxy_http_version 1.1;
