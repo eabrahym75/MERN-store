@@ -12,21 +12,8 @@ env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_wrapper: false
-      - name: Format Terraform code
-        working-directory: ./
-        run: terraform fmt
-
+  needs: Terraform CI/CD
   destroy:
-    needs: lint
     if: github.ref == 'staging-branch' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:

@@ -62,6 +62,9 @@ jobs:
     - name: Terraform Apply
       working-directory: ./
       run: terraform apply -auto-approve tf.plan
+    # - name: Terraform Destroy
+    #   working-directory: ./
+    #   run: terraform destroy -auto-approve tf.plan
     - name: Get Github action IP
       id: ip
       uses: haythem/public-ip@v1.2

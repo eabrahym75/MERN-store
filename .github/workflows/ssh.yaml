@@ -14,35 +14,33 @@ env:
 
 jobs:
   deploy-server:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: Terraform CI/CD
     steps:
       - name: Checkout
         uses: actions/Checkout@v2
-
       - name: SSH to server for deployment
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USER }}
+          host: ${{ env.AWS_SG_ID }}
+          username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |-
-            ssh -i secrets.SSH_PRIVATE_KEY secrets.USER@secrets.HOST
             cd /home/ubuntu \
             git clone https://github.com/eabrahym75/MERN-store.git 
             cd MERN-store/
             cd backend/
             sudo npm install
             sudo npm install mongodb
-            sudo npm run build
+            pm2 start 
             cd ..  \
             cd frontend/     
             sudo yarn install
-            sudo yarn run build 
+            sudo pm2 start
             cd .. \                          
             cd socket/  
             sudo npm install
-            sudo npm run build
+            sudo pm2 start
             cd ..  \
             cd backend/
             # Create a new Nginx site configuration file
@@ -80,21 +78,21 @@ jobs:
             # Test the Nginx configuration for any syntax errors
             sudo nginx -t
               
+            pm2 serve build/ 8000 -f --name "backend" --spa
+
             # Restart Nginx to apply the new configuration
             sudo systemctl restart nginx
               
-            pm2 serve build/ 3000 -f --name "frontend" --spa
               
               
             echo "******************************************"
-            echo "Performing the following actions for backend"
+            echo "Performed the following actions for backend"
             echo "******************************************"
-           
+            cd ..  \
+            cd frontend/
             sudo rm -rf build
-            sudo npm install
             sudo npm run build
-            sudo pm2 delete react-admin || true
-            sudo pm2 serve build/ 8000 -f --name "backend" --spa
+            sudo pm2 serve build/ 3000 -f --name "backend" --spa
             sudo systemctl restart nginx
     - name: Remove Github Actions IP from security group
       run: |
@@ -102,7 +100,7 @@ jobs:
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: ${{ env.AWS_REGION }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
       if: always()
 
 
