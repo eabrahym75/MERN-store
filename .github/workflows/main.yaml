@@ -13,8 +13,8 @@ env:
 jobs:
   terra-iac:
     lint:
-    runs-on: ubuntu-latest
-    steps:
+     runs-on: ubuntu-latest
+     steps:
         - name: Checkout code
           uses: actions/checkout@v2
         - name: Install Terraform
@@ -23,8 +23,8 @@ jobs:
           working-directory: ./
           run: terraform fmt
     plan:
-    needs: lint
-    steps:
+     needs: lint
+     steps:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
@@ -39,8 +39,8 @@ jobs:
         run: terraform plan -out=PLAN
 
     apply:
-    needs: plan
-    steps:
+     needs: plan
+     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Set up Terraform
