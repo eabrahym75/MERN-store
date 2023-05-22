@@ -28,4 +28,4 @@ jobs:
       working-directory: ./
     - name: Terraform Destroy
       working-directory: ./
-      run: terraform destroy -auto-approve tf.plan
+      run: terraform destroy -auto-approve PLAN
