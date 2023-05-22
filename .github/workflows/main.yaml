@@ -52,10 +52,10 @@ jobs:
         run: terraform init
       - name: Terraform Apply
         working-directory: ./
-        run: terraform apply -auto-approve PLAN
+        run: terraform apply -auto-approve 
       # - name: Terraform Destroy
       #   working-directory: ./
-      #   run: terraform destroy -auto-approve PLAN
+      #   run: terraform destroy -auto-approve 
       - name: Get Github action IP
         id: ip
         uses: haythem/public-ip@v1.2
@@ -71,7 +71,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
   deploy-server:
-    needs: terra-iac
+    needs: apply
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
