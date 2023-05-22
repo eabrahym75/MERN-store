@@ -1,28 +1,28 @@
 # Refer to the template file - install_nginx.sh
 data "template_file" "user_data1" {
-  template = "${file("./modules/install-nginx.sh")}"
-
+  template = file("./module/install-nginx.sh")
 }
 
 resource "aws_launch_configuration" "terra-ec2" {
-  Name = ""
-  image_id        = "ami-0fb653ca2d3203ac1"
-  instance_type   = var.instance_type
-  security_groups = [aws_security_group.my_asg.id]
 
-  # user_data : render the template
-  user_data     = base64encode("${data.template_file.user_data1.rendered}")
-
+  name                 = "${var.cluster_name}-lc"
+  image_id             = "ami-053b0d53c279acc90"
+  instance_type        = var.instance_type
+  security_groups      = [aws_security_group.my_asg.id]
+  user_data            = base64encode(data.template_file.user_data1.rendered)
 
   # Required when using a launch configuration with an auto scaling group.
   lifecycle {
     create_before_destroy = true
   }
+
+  key_name = aws_key_pair.key_auth.id
 }
+
 
 resource "aws_autoscaling_group" "terra" {
   launch_configuration = aws_launch_configuration.terra-ec2.name
-  vpc_zone_identifier  = aws_lb.terra-ec2.subnets
+  vpc_zone_identifier  = [aws_subnet.my_test_vpc1_PublicSubnet1.id, aws_subnet.my_test_vpc1_PublicSubnet2.id]
   target_group_arns    = [aws_lb_target_group.asg.arn]
   health_check_type    = "ELB"
 
@@ -36,12 +36,11 @@ resource "aws_autoscaling_group" "terra" {
   }
 }
 
-# Create a target group for EC2 Instances
 resource "aws_lb_target_group" "asg" {
   name     = var.cluster_name
   port     = 80
   protocol = "HTTP"
-  vpc_id      = aws_vpc.my_test_vpc1.id
+  vpc_id   = aws_vpc.my_test_vpc1.id
 
   health_check {
     path                = "/"
@@ -54,56 +53,47 @@ resource "aws_lb_target_group" "asg" {
   }
 }
 
-
 resource "aws_lb" "terra-ec2" {
   name               = "${var.cluster_name}-alb"
-  load_balancer_type = "Application"
+  load_balancer_type = "application"
   security_groups    = [aws_security_group.my_asg.id]
-  subnets            = [aws_subnet.my_test_vpc1_PublicSubnet.id, aws_subnet.my_test_vpc1_PublicSubnet2.id]
+  subnets            = [aws_subnet.my_test_vpc1_PublicSubnet1.id, aws_subnet.my_test_vpc1_PublicSubnet2.id]
 }
 
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.terra-ec2.arn
-
-  port              = "80"
-
+  port              = 80
   protocol          = "HTTP"
 
-  # By default, return a simple 404 page
   default_action {
-    type = "fixed-response"
-    target_group_arn = aws_lb_target_group.asg.arn
-  }
-}
-
-
-
-resource "aws_lb_listener_rule" "asg" {
-  listener_arn = aws_lb_listener.http.arn
-  priority     = 100
-
-  condition {
-    path_pattern {
-      values = ["*"]
-    }
-  }
-
-  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.asg.arn
   }
 }
 
+resource "aws_lb_listener_rule" "asg" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
 
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.asg.arn
+  }
+  
+  condition {
+    path_pattern {
+      values = ["*"]
+    }
+  }
+}
 
-# Create a VPC
 resource "aws_vpc" "my_test_vpc1" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
   enable_dns_support   = true
 
   tags = {
-    name = "dev"
+    Name = "dev"
   }
 }
 
@@ -118,27 +108,29 @@ resource "aws_subnet" "my_test_vpc1_PublicSubnet1" {
     Name = "Public Subnet 1"
   }
 }
+
 # creating a subnet
 resource "aws_subnet" "my_test_vpc1_PublicSubnet2" {
   vpc_id                  = aws_vpc.my_test_vpc1.id
   cidr_block              = "10.0.2.0/24"
   map_public_ip_on_launch = true
   availability_zone       = "us-east-1b"
+
   tags = {
     Name = "Public Subnet 2"
   }
 }
+
 # creating a subnet
 resource "aws_subnet" "my_test_vpc1_PrivateSubnet" {
   vpc_id                  = aws_vpc.my_test_vpc1.id
   cidr_block              = "10.0.0.0/24"
-  availability_zone       = "us-east-1b"
+  availability_zone       = "us-east-1c"
 
   tags = {
     Name = "Private Subnet"
   }
 }
-
 
 # create internet gateway
 resource "aws_internet_gateway" "my_test_vpc1_Internetgateway" {
@@ -148,7 +140,8 @@ resource "aws_internet_gateway" "my_test_vpc1_Internetgateway" {
     Name = "Gateway"
   }
 }
-# created a  route table to accept traffic from anywhere on the internet
+
+# created a route table to accept traffic from anywhere on the internet
 resource "aws_route_table" "vpc_route" {
   vpc_id = aws_vpc.my_test_vpc1.id
 
@@ -161,10 +154,7 @@ resource "aws_route" "route-inline" {
   route_table_id         = aws_route_table.vpc_route.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.my_test_vpc1_Internetgateway.id
-
 }
-
-
 
 resource "aws_route_table_association" "route1" {
   route_table_id = aws_route_table.vpc_route.id
@@ -181,10 +171,10 @@ resource "aws_route_table_association" "route3" {
   subnet_id      = aws_subnet.my_test_vpc1_PrivateSubnet.id
 }
 
-# Security Group for inbound and outbound traffic
 resource "aws_security_group" "my_asg" {
+  name        = "My ASG"
+  vpc_id   = aws_vpc.my_test_vpc1.id
 
-  name = "My ASG"
 
   # Allow inbound HTTP requests
   ingress {
@@ -193,9 +183,9 @@ resource "aws_security_group" "my_asg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
   # Allow inbound HTTPS requests
   ingress {
-    description = "Allow Port 443"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -204,7 +194,6 @@ resource "aws_security_group" "my_asg" {
 
   # Allow SSH Traffic
   ingress {
-    description = "Allow Port 22"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -219,3 +208,9 @@ resource "aws_security_group" "my_asg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+resource "aws_key_pair" "key_auth" {
+  key_name   = "terrakey"  # Replace with your desired key pair name
+  public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMI3o7KkxO0aHiDrGMB2MaE9egL8vbZ/P7Ca3zj5TVjG user@ibraheem"
+}
+
