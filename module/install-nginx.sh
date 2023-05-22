@@ -24,3 +24,5 @@ sudo ufw allow 'Nginx Full'
 sudo ufw --force enable 
 
 
+
+

@@ -34,7 +34,7 @@ jobs:
             cd backend/
             sudo npm install
             sudo npm install mongodb
-            sudo npm run dev
+            sudo npm run build
             cd ..  \
             cd frontend/     
             sudo yarn install
@@ -42,7 +42,9 @@ jobs:
             cd .. \                          
             cd socket/  
             sudo npm install
-            sudo pm2 start 
+            sudo npm run build
+            cd ..  \
+            cd backend/
             # Create a new Nginx site configuration file
             sudo tee /etc/nginx/sites-available/myapp.conf > /dev/null <<EOF
             server {
@@ -92,11 +94,15 @@ jobs:
             sudo npm install
             sudo npm run build
             sudo pm2 delete react-admin || true
-            sudo pm2 serve build/ 8000 -f --name "admin-server" --spa
-
-            sudo pm2 delete react-build || true
-            pm2 serve build/ 3000 -f --name "react-build" --spa
+            sudo pm2 serve build/ 8000 -f --name "backend" --spa
             sudo systemctl restart nginx
-
+    - name: Remove Github Actions IP from security group
+      run: |
+        aws ec2 revoke-security-group-ingress --group-id ${{ env.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ env.AWS_REGION }}
+      if: always()
 
 
