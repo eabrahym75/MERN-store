@@ -6,7 +6,7 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = "bucket-ayantola"
+    bucket = "bucket-eabrahym"
     key = "tfstate/terraform.tfstate"
     region = "us-east-1"
   }

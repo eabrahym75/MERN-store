@@ -4,21 +4,14 @@ on:
   push:
     branches:
       - dev-branch
-      
 
-  pull_request:
-    types: [closed]
-    branches:
-      - main
-     
-      
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: ${{ secrets.AWS_REGION }}
 
 jobs:
-  lint:
+  terra-iac:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -28,55 +21,114 @@ jobs:
       - name: Format Terraform code
         working-directory: ./
         run: terraform fmt
-        
+
   plan:
-    needs: lint
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/dev-branch'
+    needs: terra-iac
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
-    - name: Terraform init
-      working-directory: ./
-      run: terraform init 
-    - name: Terraform Plan
-      working-directory: ./
-      run: terraform plan -out=PLAN
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+      - name: Terraform init
+        working-directory: ./
+        run: terraform init
+      - name: Terraform Plan
+        working-directory: ./
+        run: terraform plan -out=PLAN
 
   apply:
-    needs: lint
-    if: github.ref == 'main' && github.event.pull_request.merged == true   
+    needs: plan
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
-    - name: Terraform init 
-      working-directory: ./
-      run: terraform init 
-    - name: Terraform Apply
-      working-directory: ./
-      run: terraform apply -auto-approve PLAN
-    # - name: Terraform Destroy
-    #   working-directory: ./
-    #   run: terraform destroy -auto-approve PLAN
-    - name: Get Github action IP
-      id: ip
-      uses: haythem/public-ip@v1.2
-    - name: Setting environment variables..
-      run: |
-        echo "AWS_SG_ID=module.aws_security_group.my_asg.id" >> $GITHUB_ENV
-        
-    - name: Add Github Actions IP to Security group
-      run: |
-        aws ec2 authorize-security-group-ingress --group-id ${{ env.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32    
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS__REGION: ${{ secrets.AWS_REGION }}
-  
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+      - name: Terraform init
+        working-directory: ./
+        run: terraform init
+      - name: Terraform Apply
+        working-directory: ./
+        run: terraform apply -auto-approve 
+      - name: Terraform Destroy
+        working-directory: ./
+        run: terraform destroy -auto-approve 
+      - name: Get Github action IP
+        id: ip
+        uses: haythem/public-ip@v1.2
+      - name: Setting environment variables
+        run: |
+          echo "AWS_SG_ID=module.aws_security_group.my_asg.id" >> $GITHUB_ENV
+
+      - name: Add Github Actions IP to Security group
+        run: |
+          aws ec2 authorize-security-group-ingress --group-id ${{ env.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+  deploy-server:
+    needs: apply
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: SSH to server for deployment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.AWS_SG_ID }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/ubuntu \
+            && git clone https://github.com/eabrahym75/MERN-store.git \
+            && cd MERN-store/backend/ \
+            && npm install \
+            && pm2 start server.js \
+            && cd ../frontend/ \
+            && npm install \
+            && npm run build \
+            && pm2 serve build/ 3000 --name "frontend" --spa \
+            && cd ../socket/ \
+            && npm install \
+            && pm2 start index.js --name "socket" \
+            && cd ../backend/ \
+            && sudo tee /etc/nginx/sites-available/myapp.conf > /dev/null <<EOF
+            server {
+                listen 80 default_server;
+                server_name _;  # Replace with your actual domain or IP address
+
+                location / {
+                    proxy_pass http://localhost:3000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade \$http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host \$host;
+                    proxy_cache_bypass \$http_upgrade;
+                }
+
+                location /socket.io/ {
+                    proxy_pass http://localhost:4000;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade \$http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host \$host;
+                    proxy_cache_bypass \$http_upgrade;
+                }
+            }
+            EOF
+            && sudo rm -f /etc/nginx/sites-enabled/default \
+            && sudo ln -s /etc/nginx/sites-available/myapp.conf /etc/nginx/sites-enabled/ \
+            && sudo nginx -t \
+            && sudo systemctl restart nginx
+      - name: Remove Github Actions IP from security group
+        run: |
+          aws ec2 revoke-security-group-ingress --group-id ${{ env.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        if: always()
