@@ -53,20 +53,13 @@ jobs:
       - name: Terraform Apply
         working-directory: ./
         run: terraform apply -auto-approve  
-      - name: Get Github action IP
-        id: ip
-        uses: haythem/public-ip@v1.2
-      - name: Setting environment variables
+      - name: Get Public IP
+        id: get_public_ip
         run: |
-          echo "AWS_SG_ID=sg-0e95e1ab7ec057733" >> $GITHUB_ENV
+          PUBLIC_IP=$(curl -s https://api.ipify.org)
+          echo "Public IP: $PUBLIC_IP"
+          echo "::set-output name=public_ip::$PUBLIC_IP"
 
-      - name: Add Github Actions IP to Security group
-        run: |
-          aws ec2 authorize-security-group-ingress --group-id ${{ env.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
   deploy-server:
     needs: apply
     runs-on: ubuntu-latest
@@ -76,7 +69,7 @@ jobs:
       - name: SSH to server for deployment
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.AWS_SG_ID }}
+          host: ${{ needs.apply.outputs.get_public_ip }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
@@ -121,11 +114,3 @@ jobs:
             && sudo ln -s /etc/nginx/sites-available/myapp.conf /etc/nginx/sites-enabled/ \
             && sudo nginx -t \
             && sudo systemctl restart nginx
-      - name: Remove Github Actions IP from security group
-        run: |
-          aws ec2 revoke-security-group-ingress --group-id ${{ env.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-        if: always()
