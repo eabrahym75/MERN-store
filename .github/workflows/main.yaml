@@ -56,7 +56,7 @@ jobs:
       - name: Get Public IP
         id: get_public_ip
         run: |
-          PUBLIC_IP=$(curl -s https://api.ipify.org)
+          PUBLIC_IP=$(aws ec2 describe-instances --query "Reservations[].Instances[].PublicIpAddress" --output text)
           echo "Public IP: $PUBLIC_IP"
           echo "::set-output name=public_ip::$PUBLIC_IP"
 
@@ -69,7 +69,7 @@ jobs:
       - name: SSH to server for deployment
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ steps.get_public_ip.outputs.public_ip }}
+          host: ${{ needs.apply.outputs['get_public_ip.public_ip'] }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
