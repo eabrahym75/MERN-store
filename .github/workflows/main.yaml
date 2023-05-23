@@ -78,45 +78,47 @@ jobs:
           host: ${{ env.SERVER_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |-
-            cd /home/ubuntu \
-            && git clone https://github.com/eabrahym75/MERN-store.git \
-            && cd MERN-store/backend/ \
-            && npm install \
-            && pm2 start server.js \
-            && cd ../frontend/ \
-            && npm install \
-            && npm run build \
-            && pm2 serve build/ 3000 --name "frontend" --spa \
-            && cd ../socket/ \
-            && npm install \
-            && pm2 start index.js --name "socket" \
-            && cd ../backend/ \
-            && sudo tee /etc/nginx/sites-available/myapp.conf > /dev/null <<EOF
-            server {
-                listen 80 default_server;
-                server_name _;  # Replace with your actual domain or IP address
-
-                location / {
-                    proxy_pass http://localhost:3000;
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade \$http_upgrade;
-                    proxy_set_header Connection 'upgrade';
-                    proxy_set_header Host \$host;
-                    proxy_cache_bypass \$http_upgrade;
-                }
-
-                location /socket.io/ {
-                    proxy_pass http://localhost:4000;
-                    proxy_http_version 1.1;
-                    proxy_set_header Upgrade \$http_upgrade;
-                    proxy_set_header Connection 'upgrade';
-                    proxy_set_header Host \$host;
-                    proxy_cache_bypass \$http_upgrade;
-                }
-            }
-            EOF
-            && sudo rm -rf /etc/nginx/sites-enabled/default \
-            && sudo ln -s /etc/nginx/sites-available/myapp.conf /etc/nginx/sites-enabled/ \
-            && sudo nginx -t \
-            && sudo systemctl restart nginx
+          script: |
+            sudo apt update 
+            sudo apt install git -y
+            echo "--INSTALL NVM TO USE A SPECIFIC NODE VERSION--"
+            sudo apt install curl -y
+            sudo curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
+            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+            nvm install 18
+            echo "-----PM2------"
+            sudo npm install -g pm2
+            sudo pm2 startup systemd
+            echo "-----NGINX------"
+            sudo apt install nginx -y
+            echo "---FIREWALL---"
+            sudo ufw allow OpenSSH
+            sudo ufw allow 'Nginx Full'
+            sudo ufw --force enable
+            cd /home/ubuntu
+            sudo rm -rf MERN-store || true
+            git clone https://github.com/eabrahym75/MERN-store.git 
+            cd MERN-store/
+            cd backend/ 
+            npm install 
+            sudo rm /etc/nginx/sites-available/default
+            sudo cp default /etc/nginx/sites-available/ -r 
+            sudo pm2 kill
+            pm2 start app.js
+            sudo systemctl restart nginx
+            cd ../frontend/ 
+            npm install 
+            rm -rf build
+            npm run build
+            sudo pm2 delete react-build || true
+            pm2 serve build/ 3000 -f --name "react-build" --spa
+            sudo rm -rf /etc/nginx/sites-available/default
+            sudo cp default /etc/nginx/sites-available/ -r
+            sudo systemctl restart nginx 
+            cd ../socket/ 
+            npm install 
+            pm2 start index.js --name "socket" 
+            sudo nginx -t || true
+            sudo systemctl restart nginx
