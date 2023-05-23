@@ -1,10 +1,11 @@
 #!/bin/bash
+
 sudo apt-get update
 sudo apt-get install git -y
 
 echo "--INSTALL NVM TO USE A SPECIFIC NODE VERSION--"
-sudo apt-get install curl
-sudo curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
+sudo apt-get install curl -y
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
@@ -21,8 +22,4 @@ sudo apt-get install nginx -y
 echo "---FIREWALL---"
 sudo ufw allow OpenSSH
 sudo ufw allow 'Nginx Full'
-sudo ufw --force enable 
-
-
-
-
+sudo ufw --force enable
