@@ -9,6 +9,7 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: ${{ secrets.AWS_REGION }}
+  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
 jobs:
   terra-iac:
@@ -68,11 +69,11 @@ jobs:
         uses: actions/checkout@v3
       - name: Set IP env variable
         run:  |-
-          echo SERVER_PUBLIC_IP=${{ needs.apply.outputs.get_public_ip.SERVER_PUBLIC_IP }} >> $GITHUB_ENV
+          echo PUBLIC_IP=${{ needs.apply.outputs.public_ip }} >> $GITHUB_ENV
       - name: SSH to server for deployment
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ env.SERVER_PUBLIC_IP }}
+          host: ${{ env.PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
