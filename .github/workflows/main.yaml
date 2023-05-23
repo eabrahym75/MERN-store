@@ -66,10 +66,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Set IP env variable
+        run:  |-
+          echo SERVER_PUBLIC_IP=${{ needs.apply.outputs['get_public_ip.public_ip'] }} >> $GITHUB_ENV
       - name: SSH to server for deployment
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ needs.apply.outputs['get_public_ip.public_ip'] }}
+          host: ${{ env.SERVER_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
