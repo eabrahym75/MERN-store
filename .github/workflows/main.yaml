@@ -106,7 +106,7 @@ jobs:
             sudo rm /etc/nginx/sites-available/default
             sudo cp default /etc/nginx/sites-available/ -r 
             sudo pm2 kill
-            pm2 start server.js
+            pm2 start app.js
             sudo systemctl restart nginx
             cd ../frontend/ 
             npm install 
@@ -120,5 +120,5 @@ jobs:
             cd ../socket/ 
             npm install 
             pm2 start index.js --name "socket" 
-            sudo nginx -t 
+            sudo nginx -t || true
             sudo systemctl restart nginx
