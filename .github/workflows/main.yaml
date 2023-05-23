@@ -75,7 +75,7 @@ jobs:
       - name: SSH to server for deployment
         uses: appleboy/ssh-action@master
         with:
-          host: host: ${{ needs.apply.outputs.SERVER_PUBLIC_IP }}
+          host: ${{ needs.apply.outputs.SERVER_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |-
