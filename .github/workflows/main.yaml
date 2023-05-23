@@ -58,7 +58,7 @@ jobs:
         run: terraform apply -auto-approve  
       - name: Get Public IP
         id: get_public_ip
-        run: |
+        run: |-
           PUBLIC_IP=$(aws ec2 describe-instances --query "Reservations[].Instances[].PublicIpAddress" --output text)
           echo "Public IP: $PUBLIC_IP"
           echo "::set-output name=public_ip::$PUBLIC_IP"
@@ -70,15 +70,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Set IP env variable
-        run: |
-          echo "SERVER_PUBLIC_IP=${{ needs.apply.outputs.get_public_ip }}" >> $GITHUB_ENV
+        run: |-
+          echo SERVER_PUBLIC_IP=${{ needs.apply.outputs.SERVER_PUBLIC_IP }} >> $GITHUB_ENV
       - name: SSH to server for deployment
         uses: appleboy/ssh-action@master
         with:
           host: ${{ env.SERVER_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
+          script: |-
             cd /home/ubuntu \
             && git clone https://github.com/eabrahym75/MERN-store.git \
             && cd MERN-store/backend/ \
