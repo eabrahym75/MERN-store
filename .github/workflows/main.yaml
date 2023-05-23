@@ -59,9 +59,15 @@ jobs:
       - name: Get Public IP
         id: get_public_ip
         run: |
+<<<<<<< HEAD
           PUBLIC_IP=$(aws ec2 describe-instances --query "Reservations[].Instances[].PublicIpAddress" --output text)
           echo "Public IP: $PUBLIC_IP"
           echo "::set-output name=public_ip::$PUBLIC_IP" >> $GITHUB_ENV
+=======
+          PUBLIC_IP=$(curl -s https://api.ipify.org)
+          echo "Public IP: $PUBLIC_IP"
+          echo "::set-output name=public_ip::$PUBLIC_IP"
+>>>>>>> 52ec32d93deb1e0b23741920e03bcb1f43acc22e
 
   deploy-server:
     needs: apply
@@ -75,7 +81,11 @@ jobs:
       - name: SSH to server for deployment
         uses: appleboy/ssh-action@master
         with:
+<<<<<<< HEAD
           host: ${{ needs.apply.outputs.SERVER_PUBLIC_IP }}
+=======
+          host: ${{ needs.apply.outputs.get_public_ip }}
+>>>>>>> 52ec32d93deb1e0b23741920e03bcb1f43acc22e
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |-
