@@ -78,7 +78,7 @@ jobs:
           host: ${{ env.SERVER_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |-
+          script: |
             sudo apt update 
             sudo apt install git -y
             echo "--INSTALL NVM TO USE A SPECIFIC NODE VERSION--"
