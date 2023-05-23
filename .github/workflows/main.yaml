@@ -56,7 +56,7 @@ jobs:
         run: terraform apply -auto-approve  
       - name: Get Public IP
         id: get_public_ip
-        run: |
+        run: |-
           PUBLIC_IP=$(aws ec2 describe-instances --query "Reservations[].Instances[].PublicIpAddress" --output text)
           echo "Public IP: $PUBLIC_IP"
           echo "::set-output name=public_ip::$PUBLIC_IP" 
