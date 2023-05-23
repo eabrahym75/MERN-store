@@ -209,8 +209,5 @@ resource "aws_security_group" "my_asg" {
   }
 }
 
-# resource "aws_key_pair" "key_auth" {
-#   key_name   = "terrakey"  # Replace with your desired key pair name
-#   public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMI3o7KkxO0aHiDrGMB2MaE9egL8vbZ/P7Ca3zj5TVjG user@ibraheem"
-# }
+
 
